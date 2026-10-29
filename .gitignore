@@ -1,5 +1,8 @@
 .DS_Store
 *.ini
+*.mp4
+*.jpg
+*.png
 
 /build/
 /binaries/
