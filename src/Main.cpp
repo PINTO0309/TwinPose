@@ -54,6 +54,8 @@
 #include <cctype>
 #include <chrono>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <deque>
 #include <filesystem>
@@ -1227,8 +1229,27 @@ static void update(Application& application, Room& room, float delta_time)
 
 int main(int argc, char* argv[])
 {
+	// Initial window size, overridable with TWINPOSE_WINDOW_SIZE="<width>x<height>" or "max" (maximized)
+	int window_width = 1280;
+	int window_height = 720;
+	bool window_maximized = false;
+	if (const char* window_size = std::getenv("TWINPOSE_WINDOW_SIZE"))
+	{
+		int width = 0;
+		int height = 0;
+		if (std::strcmp(window_size, "max") == 0)
+		{
+			window_maximized = true;
+		}
+		else if (std::sscanf(window_size, "%dx%d", &width, &height) == 2 && width > 0 && height > 0)
+		{
+			window_width = width;
+			window_height = height;
+		}
+	}
+
 	Application application;
-	if (!application.init("TwinPose V3", 1280, 720, 60, true))
+	if (!application.init("TwinPose V3", window_width, window_height, 60, true, window_maximized))
 	{
 		return -1;
 	}
@@ -1242,6 +1263,11 @@ int main(int argc, char* argv[])
 
 	application.run([&](float delta_time) -> void
 	{
+		if (application.take_resized())
+		{
+			auto [resized_width, resized_height] = application.get_framebuffer_size();
+			room.resize(resized_width, resized_height);
+		}
 		update(application, room, delta_time);
 	});
 

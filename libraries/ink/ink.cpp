@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <cstring>
 #include <format>
 #include <fstream>
 #include <limits>

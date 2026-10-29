@@ -87,7 +87,7 @@ inline void viz_multi_pose_3d(Room& room, const MultiPose3D& multi_pose, const R
 
 inline ink::Vec3 get_palette_color(int index)
 {
-	return ink::Color::hsl_to_rgb({std::fmodf(index * ink::PI, 1.0f), 0.7f, 0.7f});
+	return ink::Color::hsl_to_rgb({std::fmod(static_cast<float>(index * ink::PI), 1.0f), 0.7f, 0.7f});
 }
 
 inline void viz_joints(Room& room,

@@ -45,10 +45,10 @@ public:
 
 	void prepare_resources()
 	{
-		const std::string path_s = "Assets/standard/";
-		const std::string path_g = "Assets/vr-exhibition-gallery-baked/";
+		const std::string path_s = "assets/standard/";
+		const std::string path_g = "assets/vr-exhibition-gallery-baked/";
 
-		images["Env"] = ink::Loader::load_image("Assets/Studio_Soft.hdr");
+		images["Env"] = ink::Loader::load_image("assets/Studio_Soft.hdr");
 		images["Env"].flip_vertical();
 
 		probes["Env"] = ink::ReflectionProbe(1, 2048);
@@ -191,6 +191,44 @@ public:
 		fxaa_pass.set_target(&targets["PostTarget1"]);
 
 		copy_pass.set_texture(&maps["PostMap1"]);
+	}
+
+	// Rebuilds the size-dependent parts of the pipeline (render maps, bloom pass, projection)
+	// after the window has been resized. The camera position and orientation are preserved.
+	void resize(int width, int height)
+	{
+		if (width <= 0 || height <= 0)
+		{
+			return;
+		}
+
+		viewport = ink::gpu::Rect(width, height);
+
+		int width_2 = viewport.width * 2;
+		int height_2 = viewport.height * 2;
+
+		maps["DepthMap"].init_2d(width_2, height_2, ink::TEXTURE_D24_UNORM);
+		maps["DepthMap"].set_filters(ink::TEXTURE_LINEAR, ink::TEXTURE_LINEAR);
+
+		maps["PostMap0"].init_2d(width_2, height_2, ink::TEXTURE_R16G16B16_SFLOAT);
+		maps["PostMap0"].set_filters(ink::TEXTURE_LINEAR, ink::TEXTURE_LINEAR);
+
+		maps["PostMap1"].init_2d(width_2, height_2, ink::TEXTURE_R16G16B16_SFLOAT);
+		maps["PostMap1"].set_filters(ink::TEXTURE_LINEAR, ink::TEXTURE_LINEAR);
+
+		targets["BaseTarget"].set_texture(maps["PostMap0"], 0);
+		targets["BaseTarget"].set_depth_texture(maps["DepthMap"]);
+		targets["PostTarget0"].set_texture(maps["PostMap0"], 0);
+		targets["PostTarget1"].set_texture(maps["PostMap1"], 0);
+
+		renderer.set_viewport(ink::gpu::Rect(width_2, height_2));
+
+		camera.projection = ink::PerspCamera(75 * ink::DEG_TO_RAD, float(width) / float(height), 0.05, 500).projection;
+
+		bloom_pass = ink::BloomPass(width_2, height_2, bloom_pass.threshold, bloom_pass.intensity, bloom_pass.radius);
+		bloom_pass.init();
+		bloom_pass.set_texture(&maps["PostMap0"]);
+		bloom_pass.set_target(&targets["PostTarget1"]);
 	}
 
 	void control_camera(const ink::Vec3& move, const ink::Vec2& look_delta, float sensitivity)

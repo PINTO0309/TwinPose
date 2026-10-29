@@ -24,6 +24,8 @@
 
 #include "Common.h"
 
+#include <cfloat>
+
 namespace v3
 {
 

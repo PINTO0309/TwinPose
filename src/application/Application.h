@@ -55,7 +55,7 @@ public:
 		shutdown();
 	}
 
-	bool init(const std::string& title, int width, int height, int fps = 60, bool high_dpi = false)
+	bool init(const std::string& title, int width, int height, int fps = 60, bool high_dpi = false, bool maximized = false)
 	{
 		this->window_width = width;
 		this->window_height = height;
@@ -83,10 +83,14 @@ public:
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 		SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 
-		uint32_t flags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL;
+		uint32_t flags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 		if (high_dpi)
 		{
 			flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+		}
+		if (maximized)
+		{
+			flags |= SDL_WINDOW_MAXIMIZED;
 		}
 		sdl_window = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED,
 			SDL_WINDOWPOS_CENTERED, width, height, flags);
@@ -256,6 +260,14 @@ public:
 		return {drawable_width, drawable_height};
 	}
 
+	// Returns true once after the window size has changed since the last call
+	bool take_resized()
+	{
+		bool result = resized;
+		resized = false;
+		return result;
+	}
+
 	float get_dpi_scale() const
 	{
 		return dpi_scale;
@@ -296,6 +308,15 @@ private:
 				open = false;
 				return;
 			}
+			else if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+			{
+				window_width = event.window.data1;
+				window_height = event.window.data2;
+				SDL_GL_GetDrawableSize(sdl_window, &drawable_width, &drawable_height);
+				dpi_scale = window_width > 0 ? float(drawable_width) / float(window_width) : 1.0f;
+				ink::RenderPass::set_viewport(ink::gpu::Rect(drawable_width, drawable_height));
+				resized = true;
+			}
 			else if (event.type == SDL_KEYDOWN)
 			{
 				int key = remap_key(event.key.keysym.sym);
@@ -326,6 +347,7 @@ private:
 	}
 
 	bool open = false;
+	bool resized = false;
 
 	int window_width = 1280;
 	int window_height = 720;
