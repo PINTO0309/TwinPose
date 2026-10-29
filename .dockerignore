@@ -1,0 +1,6 @@
+# docker build のコンテキストから除外する (docker/twinpose.sh の通常運用では bind mount するため無関係)
+**/.git
+/build
+/binaries
+/intermediate
+/docker/out

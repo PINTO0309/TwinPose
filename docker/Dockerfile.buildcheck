@@ -1,0 +1,16 @@
+# ビルド検証専用: docker run が使えない状態でも BuildKit だけで Linux コンパイルとヘッドレス起動を確認する。
+# リポジトリ (コンテキスト) を bind mount し、ビルド成果物は BuildKit のキャッシュマウントに置く (増分ビルド)。
+# スクリーンショットとログだけを /out に残す。
+FROM twinpose-dev:ubuntu24.04 AS build
+USER root
+RUN --mount=type=bind,target=/work,rw --network=none \
+    --mount=type=cache,target=/work/build,id=twinpose-check-build \
+    --mount=type=cache,target=/work/binaries,id=twinpose-check-binaries \
+    --mount=type=cache,target=/work/intermediate,id=twinpose-check-intermediate \
+    cmake -S /work -B /work/build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+ && cmake --build /work/build -j"$(nproc)" -- -k 0 \
+ && { SMOKE_LOAD=1 SMOKE_SECONDS=25 bash /work/docker/smoke_test.sh; rc=$?; \
+      mkdir -p /out && cp -a /work/docker/out/. /out/ && echo "$rc" > /out/smoke_rc.txt; }
+
+FROM scratch
+COPY --from=build /out /
